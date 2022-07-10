@@ -1,4 +1,4 @@
-const { User, Application } = require('../models');
+const { User, Application } = require("../models");
 
 module.exports = {
   // Get all users
@@ -10,10 +10,10 @@ module.exports = {
   // Get a single user
   getSingleUser(req, res) {
     User.findOne({ _id: req.params.userId })
-      .select('-__v')
+      .select("-__v")
       .then((user) =>
         !user
-          ? res.status(404).json({ message: 'No user with that ID' })
+          ? res.status(404).json({ message: "No user with that ID" })
           : res.json(user)
       )
       .catch((err) => res.status(500).json(err));
@@ -27,12 +27,47 @@ module.exports = {
   // Delete a user and associated apps
   deleteUser(req, res) {
     User.findOneAndDelete({ _id: req.params.userId })
-      .then((user) =>
-        !user
-          ? res.status(404).json({ message: 'No user with that ID' })
-          : Application.deleteMany({ _id: { $in: user.applications } })
-      )
-      .then(() => res.json({ message: 'User and associated apps deleted!' }))
+      .then(() => res.json({ message: "User and associated apps deleted!" }))
+      .catch((err) => res.status(500).json(err));
+  },
+
+  updateUser(req, res) {
+    User.findOneAndUpdate({ _id: req.params.userId }, req.body)
+      .then(() => res.json({ message: "User and associated apps updated!" }))
+      .catch((err) => res.status(500).json(err));
+  },
+
+  addFriend(req, res) {
+    User.findOne({ _id: req.params.userId })
+      .then(async (user) => {
+        const friendArray = user.friends;
+        const newFriend = await User.findOne({ _id: req.params.friendId });
+        friendArray.push(newFriend);
+        const updatedUser = await User.findOneAndUpdate(
+          { _id: req.params.userId },
+          { friends: friendArray }
+        );
+        res.status(200).json(updatedUser);
+      })
+      .catch((err) => res.status(500).json(err));
+  },
+
+  deleteFriend(req, res) {
+    User.findOne({ _id: req.params.userId })
+      .then(async (user) => {
+        const friendArray = user.friends;
+
+        for (var i = 0; i < friendArray.length; i++) {
+          if (friendArray[i]._id == req.params.friendId) {
+            friendArray.splice(i, 1);
+          }
+        }
+        const updatedUser = await User.findOneAndUpdate(
+          { _id: req.params.userId },
+          { friends: friendArray }
+        );
+        res.status(200).json(updatedUser);
+      })
       .catch((err) => res.status(500).json(err));
   },
 };
