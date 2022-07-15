@@ -1,4 +1,4 @@
-const { User } = require("../models");
+const { User, Thought } = require("../models");
 
 module.exports = {
   getUsers(req, res) {
@@ -25,7 +25,14 @@ module.exports = {
   },
 
   deleteUser(req, res) {
-    User.findOneAndDelete({ _id: req.params.userId })
+    User.findOne({ _id: req.params.userId })
+      .then(async (u) => {
+        const thoughtsArray = u.thoughts;
+        thoughtsArray.forEach(
+          async (t) => await Thought.findOneAndDelete({ _id: t })
+        );
+      })
+      .then(async () => await User.findOneAndDelete({ _id: req.params.userId }))
       .then(() => res.json({ message: "User deleted!" }))
       .catch((err) => res.status(500).json(err));
   },
